@@ -12,15 +12,43 @@ VERSION {
   };
 }
 
+#ifdef CONFIG_LD_IS_LLD
+/*
+ * Explicit program headers for lld compatibility (dynamic build).
+ * See uml.lds.S for the full rationale.
+ */
+PHDRS {
+	headers PT_LOAD FILEHDR PHDRS FLAGS(4);  /* PF_R */
+	interp PT_INTERP FLAGS(4);               /* PF_R */
+	text PT_LOAD FLAGS(5);                   /* PF_R|PF_X */
+	data PT_LOAD FLAGS(7);                   /* PF_R|PF_W|PF_X */
+	dynamic PT_DYNAMIC FLAGS(6);             /* PF_R|PF_W */
+	tls  PT_TLS FLAGS(4);                    /* PF_R */
+}
+#define PHDR_INTERP :headers :interp
+#define PHDR_TEXT :text
+#define PHDR_DATA :data
+#define PHDR_DYNAMIC :data :dynamic
+#define PHDR_DATA_TLS :data :tls
+#define PHDR_AFTER_TLS .after_tls : { BYTE(0) } :data
+#else /* !CONFIG_LD_IS_LLD */
+#define PHDR_INTERP
+#define PHDR_TEXT
+#define PHDR_DATA
+#define PHDR_DYNAMIC
+#define PHDR_DATA_TLS
+#define PHDR_AFTER_TLS
+#endif
+
 SECTIONS
 {
   PROVIDE (__executable_start = START);
   . = START + SIZEOF_HEADERS;
-  .interp         : { *(.interp) }
+  .interp         : { *(.interp) } PHDR_INTERP
   __binary_start = .;
   . = ALIGN(4096);		/* Init code and data */
   _text = .;
-  INIT_TEXT_SECTION(PAGE_SIZE)
+  INIT_TEXT_SECTION(PAGE_SIZE) PHDR_TEXT
 
   . = ALIGN(PAGE_SIZE);
 
@@ -121,11 +149,9 @@ SECTIONS
     SORT(CONSTRUCTORS)
   }
   .data1          : { *(.data1) }
-  .tdata	  : { *(.tdata .tdata.* .gnu.linkonce.td.*) }
-  .tbss		  : { *(.tbss .tbss.* .gnu.linkonce.tb.*) *(.tcommon) }
   .eh_frame       : { KEEP (*(.eh_frame)) }
   .gcc_except_table   : { *(.gcc_except_table) }
-  .dynamic        : { *(.dynamic) }
+  .dynamic        : { *(.dynamic) } PHDR_DYNAMIC
   .ctors          : {
     /* gcc uses crtbegin.o to find the start of
        the constructors, so we make sure it is
@@ -153,6 +179,12 @@ SECTIONS
   }
   .jcr            : { KEEP (*(.jcr)) }
   .got            : { *(.got.plt) *(.got) }
+  /*
+   * TLS sections placed last before BSS.  See uml.lds.S for rationale.
+   */
+  .tdata	  : { *(.tdata .tdata.* .gnu.linkonce.td.*) } PHDR_DATA_TLS
+  .tbss		  : { *(.tbss .tbss.* .gnu.linkonce.tb.*) *(.tcommon) } PHDR_DATA_TLS
+  PHDR_AFTER_TLS
   _edata = .;
   PROVIDE (edata = .);
   .bss            : {

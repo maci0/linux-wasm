@@ -45,7 +45,6 @@ vmlinux.wasm: vmlinux.a
 		-Wl,--export=wasm_console_input \
 		-Wl,--export=wasm_raise_irq \
 		-Wl,--export-memory \
-		-Wl,--strip-debug \
 		-o $@ vmlinux.a
 	@echo "  BUILD   $@"
 

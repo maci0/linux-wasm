@@ -80,3 +80,47 @@ void __init setup_arch(char **cmdline_p)
 void __init arch_cpu_finalize_init(void)
 {
 }
+
+#ifdef CONFIG_WASM
+/*
+ * Node data for the freestanding port.  Defined here as initialized data
+ * in an early-compiled arch/wasm object: wasm-ld assigns zero-initialized
+ * statics addresses that collide with the module's data segments (the
+ * generic contig_page_data in .ref.data overlaps the boot-parameter
+ * strings), which corrupts the page allocator.  The "wasm" zone name is
+ * a placeholder that free_area_init() overwrites.
+ */
+struct pglist_data wasm_node_data = {
+	.node_zones[0].name = "wasm",
+};
+#endif
+
+#ifdef CONFIG_WASM
+/*
+ * The memblock region arrays (see memblock.c) must live away from the
+ * memblock struct: wasm-ld placed them at the same address inside
+ * .init.data.  The non-zero initializer keeps them in the data segment
+ * (early area); the contents are filled in by memblock_add().
+ */
+struct memblock_region memblock_memory_init_regions[128] = { { 0, 0, 1 } };
+struct memblock_region memblock_reserved_init_regions[128] = { { 0, 0, 1 } };
+
+/*
+ * The memblock struct itself has the same problem as the arrays: wasm-ld
+ * splits its symbol address from its initializer content inside the late
+ * .init.data segments, so no post-link remap can fix it.  Define it here
+ * as early data instead (see mm/memblock.c).
+ */
+struct memblock memblock = {
+	.memory.regions		= memblock_memory_init_regions,
+	.memory.max		= 128, /* INIT_MEMBLOCK_REGIONS */
+	.memory.name		= "memory",
+
+	.reserved.regions	= memblock_reserved_init_regions,
+	.reserved.max		= 128, /* INIT_MEMBLOCK_REGIONS */
+	.reserved.name		= "reserved",
+
+	.bottom_up		= false,
+	.current_limit		= MEMBLOCK_ALLOC_ANYWHERE,
+};
+#endif

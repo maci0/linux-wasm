@@ -66,13 +66,14 @@ KBUILD_RUSTFLAGS += -Crelocation-model=pie
 
 KBUILD_AFLAGS += $(ARCH_INCLUDE)
 
-USER_CFLAGS = $(patsubst $(KERNEL_DEFINES),,$(patsubst -I%,,$(KBUILD_CFLAGS))) \
+USER_CFLAGS = $(filter-out -fshort-wchar,$(patsubst $(KERNEL_DEFINES),,$(patsubst -I%,,$(KBUILD_CFLAGS)))) \
 		$(ARCH_INCLUDE) $(MODE_INCLUDE) $(filter -I%,$(CFLAGS)) \
 		-D_FILE_OFFSET_BITS=64 -idirafter $(srctree)/include \
 		-idirafter $(objtree)/include -D__KERNEL__ -D__UM_HOST__ \
 		-include $(srctree)/include/linux/compiler-version.h \
 		-include $(srctree)/include/linux/kconfig.h \
-		-idirafter $(ARCH_DIR)/include/generated
+		-idirafter $(ARCH_DIR)/include/generated \
+		$(CLANG_FLAGS)
 
 #This will adjust *FLAGS accordingly to the platform.
 include $(srctree)/$(ARCH_DIR)/Makefile-os-Linux
@@ -119,6 +120,20 @@ archprepare:
 LINK-$(CONFIG_LD_SCRIPT_STATIC) += -static
 LINK-$(CONFIG_LD_SCRIPT_DYN) += -no-pie
 LINK-$(CONFIG_LD_SCRIPT_DYN_RPATH) += -Wl,-rpath,/lib
+
+# UML links vmlinux through CC (for libc/CRT handling), but must use
+# the same linker as the rest of the kernel.  Without this, CC defaults
+# to whatever the system linker is (usually bfd), ignoring LLVM=1.
+ifdef CONFIG_LD_IS_LLD
+LINK-y += -fuse-ld=lld
+# lld requires RELRO sections (.dynamic, .got) to be contiguous, but
+# UML's linker script places them in a custom order.  RELRO is not
+# meaningful for UML (it manages its own memory protection).
+LINK-y += -Wl,-z,norelro
+endif
+ifdef CONFIG_LD_IS_BFD
+LINK-y += -fuse-ld=bfd
+endif
 
 CFLAGS_NO_HARDENING := $(call cc-option, -fno-PIC,) $(call cc-option, -fno-pic,) \
 	-fno-stack-protector $(call cc-option, -fno-stack-protector-all)
