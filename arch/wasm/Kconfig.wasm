@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: GPL-2.0
+
+config WASM_CORE
+	def_bool y
+	select GENERIC_HWEIGHT
+
+config WASM_NET
+	bool "Virtual Ethernet device bridged to the wasm host"
+	depends on NET
+	help
+	  Provides an etherstub network device (10.0.2.15) whose frames are
+	  exchanged with the wasm host through the wasm_net_send() /
+	  wasm_net_recv() imports.  A WebSocket bridge on the host NATs the
+	  kernel's IPv4 traffic to the real network ("slirp-lite").

@@ -1,0 +1,110 @@
+# SPDX-License-Identifier: GPL-2.0
+
+menu "wasm-specific options"
+
+config WASM
+	bool
+	default y
+	select ARCH_WANTS_DYNAMIC_TASK_STRUCT
+	select ARCH_HAS_CACHE_LINE_SIZE
+	select ARCH_HAS_FORTIFY_SOURCE
+	select HAVE_ARCH_AUDITSYSCALL
+	select HAVE_ARCH_KASAN
+	select HAVE_ARCH_KASAN_VMALLOC
+	select HAVE_ARCH_SECCOMP_FILTER
+	select HAVE_ASM_MODVERSIONS
+	select HAVE_UID16
+	select HAVE_DEBUG_KMEMLEAK
+	select HAVE_DEBUG_BUGVERBOSE
+	select HAVE_PAGE_SIZE_4KB
+	select GENERIC_IRQ_SHOW
+	select GENERIC_CPU_DEVICES
+	select HAVE_GCC_PLUGINS
+	select ARCH_SUPPORTS_LTO_CLANG
+	select ARCH_SUPPORTS_LTO_CLANG_THIN
+	select TRACE_IRQFLAGS_SUPPORT
+	select TTY
+	select HAVE_ARCH_VMAP_STACK
+	select HAVE_SYSCALL_TRACEPOINTS
+	select THREAD_INFO_IN_TASK
+	select SPARSE_IRQ
+	select ARCH_WANTS_THREAD_STACK_PROVIDER
+
+config MMU
+	bool
+	default y
+
+config 64BIT
+	bool
+	default n
+
+config 32BIT
+	bool
+	default y
+
+config GENERIC_CALIBRATE_DELAY
+	bool
+	default y
+
+config GENERIC_HWEIGHT
+	bool
+	default y
+
+config GENERIC_CSUM
+	bool
+	default y
+
+config WASM_SUBARCH_SUPPORTS_SMP
+	bool
+	default n
+
+config SMP
+	bool "Symmetric multi-processing support"
+	default n
+	depends on WASM_SUBARCH_SUPPORTS_SMP
+
+config NR_CPUS_RANGE_BEGIN
+	int
+	default 1
+
+config NR_CPUS_RANGE_END
+	int
+	default 1
+
+config NR_CPUS_DEFAULT
+	int
+	default 1
+
+config NR_CPUS
+	int "Maximum number of CPUs"
+	range NR_CPUS_RANGE_BEGIN NR_CPUS_RANGE_END
+	default NR_CPUS_DEFAULT
+
+config STATIC_LINK
+	bool "Force a static link"
+	default y
+	help
+	  Force static link for wasm. Required because wasm has no dynamic linker.
+
+config PGTABLE_LEVELS
+	int
+	default 2
+
+config KERNEL_STACK_ORDER
+	int
+	default 2
+
+config HZ
+	int
+	default 100
+
+config MAY_HAVE_RUNTIME_DEPS
+	bool
+	default n
+
+config NO_IOMEM
+	bool
+	default y
+
+source "arch/wasm/Kconfig.wasm"
+endmenu

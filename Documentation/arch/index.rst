@@ -12,6 +12,7 @@ implementation.
    arc/index
    arm/index
    arm64/index
+   wasm
    loongarch/index
    m68k/index
    mips/index

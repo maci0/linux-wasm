@@ -426,10 +426,18 @@ endif
 ifeq ($(ARCH),parisc64)
        SRCARCH := parisc
 endif
+# Additional ARCH settings for wasm (freestanding WebAssembly)
+ifeq ($(ARCH),wasm)
+        SRCARCH := wasm
+endif
 
 export cross_compiling :=
 ifneq ($(SRCARCH),$(SUBARCH))
+ifeq ($(ARCH),wasm)
+# wasm builds always use zig cc with an explicit --target; no binutils prefix.
+else
 cross_compiling := 1
+endif
 endif
 
 KCONFIG_CONFIG	?= .config

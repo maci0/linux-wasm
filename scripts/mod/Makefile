@@ -4,6 +4,14 @@ CFLAGS_REMOVE_empty.o += $(CC_FLAGS_LTO)
 hostprogs-always-y	+= modpost mk_elfconfig
 always-y		+= empty.o
 
+# wasm target: empty.o is a WebAssembly object which mk_elfconfig cannot
+# parse.  Build it with the host compiler so elfconfig.h reflects a real
+# ELF class; the actual kernel objects stay wasm.
+ifeq ($(ARCH),wasm)
+$(obj)/empty.o: FORCE
+	$(Q)$(HOSTCC) $(KBUILD_HOSTCFLAGS) -c $(srctree)/$(src)/empty.c -o $@
+endif
+
 modpost-objs	:= modpost.o file2alias.o sumversion.o symsearch.o
 
 devicetable-offsets-file := devicetable-offsets.h
