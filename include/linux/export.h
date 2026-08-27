@@ -30,6 +30,20 @@
  *
  *   .asciz "MODULE_" "kvm" ;
  */
+#ifdef CONFIG_WASM
+/*
+ * wasm integrated assembler: no named-section flags, no .previous,
+ * and data symbols need explicit .size.
+ */
+#define ___EXPORT_SYMBOL(sym, license, ns...)		\
+	.data					ASM_NL	\
+	__export_symbol_##sym:			ASM_NL	\
+		.asciz license			ASM_NL	\
+		.ascii ns "\0"			ASM_NL	\
+		__EXPORT_SYMBOL_REF(sym)	ASM_NL	\
+		.size __export_symbol_##sym, . - __export_symbol_##sym ASM_NL \
+	.text
+#else
 #define ___EXPORT_SYMBOL(sym, license, ns...)		\
 	.section ".export_symbol","a"		ASM_NL	\
 	__export_symbol_##sym:			ASM_NL	\
@@ -37,6 +51,7 @@
 		.ascii ns "\0"			ASM_NL	\
 		__EXPORT_SYMBOL_REF(sym)	ASM_NL	\
 	.previous
+#endif
 
 #if defined(__DISABLE_EXPORTS)
 

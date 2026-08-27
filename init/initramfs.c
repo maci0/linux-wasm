@@ -779,10 +779,25 @@ void wait_for_initramfs(void)
 }
 EXPORT_SYMBOL_GPL(wait_for_initramfs);
 
+#ifdef CONFIG_WASM
+/* called directly from do_initcalls() on wasm (no initcall sections) */
+int __init populate_rootfs(void)
+#else
 static int __init populate_rootfs(void)
+#endif
 {
+#ifdef CONFIG_WASM
+	/*
+	 * wasm32 cannot run kernel threads (see arch/wasm/kernel/process.c),
+	 * so the unpack cannot be delegated to the async workqueue.  Run it
+	 * inline; mark the cookie so wait_for_initramfs() completes.
+	 */
+	do_populate_rootfs(NULL, 0);
+	initramfs_cookie = 1;
+#else
 	initramfs_cookie = async_schedule_domain(do_populate_rootfs, NULL,
 						 &initramfs_domain);
+#endif
 	usermodehelper_enable();
 	if (!initramfs_async)
 		wait_for_initramfs();

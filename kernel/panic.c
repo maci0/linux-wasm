@@ -926,7 +926,7 @@ void warn_slowpath_fmt(const char *file, int line, unsigned taint,
 	pr_warn(CUT_HERE);
 
 	if (!fmt) {
-		__warn(file, line, __builtin_return_address(0), taint,
+		__warn(file, line, _RET_IP_, taint,
 		       NULL, NULL);
 		warn_rcu_exit(rcu);
 		return;
@@ -934,7 +934,7 @@ void warn_slowpath_fmt(const char *file, int line, unsigned taint,
 
 	args.fmt = fmt;
 	va_start(args.args, fmt);
-	__warn(file, line, __builtin_return_address(0), taint, NULL, &args);
+	__warn(file, line, _RET_IP_, taint, NULL, &args);
 	va_end(args.args);
 	warn_rcu_exit(rcu);
 }

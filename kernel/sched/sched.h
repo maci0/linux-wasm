@@ -2683,9 +2683,21 @@ const struct sched_class name##_sched_class \
 	__aligned(__alignof__(struct sched_class)) \
 	__section("__" #name "_sched_class")
 
+#ifdef CONFIG_WASM
+/*
+ * wasm-ld cannot lay out the __*_sched_class sections in priority order,
+ * so the classes are iterated through an explicit ordered table provided
+ * by arch/wasm/kernel/sched.c instead of a contiguous linker-placed array.
+ */
+extern const struct sched_class *wasm_sched_classes[];
+extern const unsigned int wasm_sched_class_count;
+extern struct sched_class *__sched_class_highest;
+extern struct sched_class *__sched_class_lowest;
+#else
 /* Defined in include/asm-generic/vmlinux.lds.h */
 extern struct sched_class __sched_class_highest[];
 extern struct sched_class __sched_class_lowest[];
+#endif
 
 extern const struct sched_class stop_sched_class;
 extern const struct sched_class dl_sched_class;
@@ -2712,16 +2724,42 @@ static inline const struct sched_class *next_active_class(const struct sched_cla
 #define for_class_range(class, _from, _to) \
 	for (class = (_from); class < (_to); class++)
 
+#ifdef CONFIG_WASM
+#define for_each_class(class)						\
+	for (unsigned int __sc_i = 0;					\
+	     __sc_i < wasm_sched_class_count &&				\
+	     ((class) = wasm_sched_classes[__sc_i]); __sc_i++)
+
+#define for_active_class_range(class, _from, _to)	for_each_class(class)
+#else
 #define for_each_class(class) \
 	for_class_range(class, __sched_class_highest, __sched_class_lowest)
 
 #define for_active_class_range(class, _from, _to)				\
 	for (class = (_from); class != (_to); class = next_active_class(class))
+#endif
 
 #define for_each_active_class(class)						\
 	for_active_class_range(class, __sched_class_highest, __sched_class_lowest)
 
+#ifdef CONFIG_WASM
+static inline bool wasm_sched_class_above(const struct sched_class *a,
+					  const struct sched_class *b)
+{
+	unsigned int i;
+
+	for (i = 0; i < wasm_sched_class_count; i++) {
+		if (wasm_sched_classes[i] == a)
+			return true;
+		if (wasm_sched_classes[i] == b)
+			return false;
+	}
+	return false;
+}
+#define sched_class_above(_a, _b)	wasm_sched_class_above((_a), (_b))
+#else
 #define sched_class_above(_a, _b)	((_a) < (_b))
+#endif
 
 static inline bool sched_stop_runnable(struct rq *rq)
 {

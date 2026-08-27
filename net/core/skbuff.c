@@ -1211,9 +1211,9 @@ bool __sk_skb_reason_drop(struct sock *sk, struct sk_buff *skb,
 				SKB_DROP_REASON_SUBSYS_NUM);
 
 	if (reason == SKB_CONSUMED)
-		trace_consume_skb(skb, __builtin_return_address(0));
+		trace_consume_skb(skb, _RET_IP_);
 	else
-		trace_kfree_skb(skb, __builtin_return_address(0), reason, sk);
+		trace_kfree_skb(skb, _RET_IP_, reason, sk);
 	return true;
 }
 
@@ -1425,7 +1425,7 @@ void consume_skb(struct sk_buff *skb)
 	if (!skb_unref(skb))
 		return;
 
-	trace_consume_skb(skb, __builtin_return_address(0));
+	trace_consume_skb(skb, _RET_IP_);
 	__kfree_skb(skb);
 }
 EXPORT_SYMBOL(consume_skb);
@@ -1440,7 +1440,7 @@ EXPORT_SYMBOL(consume_skb);
  */
 void __consume_stateless_skb(struct sk_buff *skb)
 {
-	trace_consume_skb(skb, __builtin_return_address(0));
+	trace_consume_skb(skb, _RET_IP_);
 	skb_release_data(skb, SKB_CONSUMED);
 	kfree_skbmem(skb);
 }
@@ -1507,7 +1507,7 @@ void napi_consume_skb(struct sk_buff *skb, int budget)
 		return;
 
 	/* if reaching here SKB is ready to free */
-	trace_consume_skb(skb, __builtin_return_address(0));
+	trace_consume_skb(skb, _RET_IP_);
 
 	/* if SKB is a clone, don't handle this case */
 	if (skb->fclone != SKB_FCLONE_UNAVAILABLE) {
@@ -2620,7 +2620,7 @@ void *skb_put(struct sk_buff *skb, unsigned int len)
 	skb->tail += len;
 	skb->len  += len;
 	if (unlikely(skb->tail > skb->end))
-		skb_over_panic(skb, len, __builtin_return_address(0));
+		skb_over_panic(skb, len, _RET_IP_);
 	return tmp;
 }
 EXPORT_SYMBOL(skb_put);
@@ -2639,7 +2639,7 @@ void *skb_push(struct sk_buff *skb, unsigned int len)
 	skb->data -= len;
 	skb->len  += len;
 	if (unlikely(skb->data < skb->head))
-		skb_under_panic(skb, len, __builtin_return_address(0));
+		skb_under_panic(skb, len, _RET_IP_);
 	return skb->data;
 }
 EXPORT_SYMBOL(skb_push);

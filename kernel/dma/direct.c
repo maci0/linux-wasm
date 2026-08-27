@@ -276,7 +276,7 @@ void *dma_direct_alloc(struct device *dev, size_t size,
 
 		/* create a coherent mapping */
 		ret = dma_common_contiguous_remap(page, size, prot,
-				__builtin_return_address(0));
+				_RET_IP_);
 		if (!ret)
 			goto out_free_pages;
 	} else {

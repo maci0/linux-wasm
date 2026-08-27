@@ -34,7 +34,7 @@ void __iomem *generic_ioremap_prot(phys_addr_t phys_addr, size_t size,
 	size = PAGE_ALIGN(size + offset);
 
 	area = __get_vm_area_caller(size, VM_IOREMAP, IOREMAP_START,
-				    IOREMAP_END, __builtin_return_address(0));
+				    IOREMAP_END, _RET_IP_);
 	if (!area)
 		return NULL;
 	vaddr = (unsigned long)area->addr;

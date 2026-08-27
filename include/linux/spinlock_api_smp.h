@@ -164,7 +164,11 @@ static inline void __raw_spin_unlock_bh(raw_spinlock_t *lock)
 {
 	spin_release(&lock->dep_map, _RET_IP_);
 	do_raw_spin_unlock(lock);
+#ifdef CONFIG_WASM_CORE
+	/* wasm: no softirqs to run */
+#else
 	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
+#endif
 }
 
 static inline int __raw_spin_trylock_bh(raw_spinlock_t *lock)

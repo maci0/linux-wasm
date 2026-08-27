@@ -57,9 +57,17 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/timer.h>
 
+#ifdef CONFIG_WASM
+/*
+ * jiffies_64 is provided by arch/wasm/kernel/jiffies.c, which must also
+ * provide the 32-bit jiffies alias: wasm-ld cannot create it through the
+ * linker script (it ignores symbol assignments).
+ */
+#else
 __visible u64 jiffies_64 __cacheline_aligned_in_smp = INITIAL_JIFFIES;
 
 EXPORT_SYMBOL(jiffies_64);
+#endif
 
 /*
  * The timer wheel has LVL_DEPTH array levels. Each level provides an array of

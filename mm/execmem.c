@@ -40,13 +40,13 @@ static void *execmem_vmalloc(struct execmem_range *range, size_t size,
 
 	p = __vmalloc_node_range(size, align, start, end, gfp_flags,
 				 pgprot, vm_flags, NUMA_NO_NODE,
-				 __builtin_return_address(0));
+				 _RET_IP_);
 	if (!p && range->fallback_start) {
 		start = range->fallback_start;
 		end = range->fallback_end;
 		p = __vmalloc_node_range(size, align, start, end, gfp_flags,
 					 pgprot, vm_flags, NUMA_NO_NODE,
-					 __builtin_return_address(0));
+					 _RET_IP_);
 	}
 
 	if (!p) {
@@ -69,11 +69,11 @@ struct vm_struct *execmem_vmap(size_t size)
 
 	area = __get_vm_area_node(size, range->alignment, PAGE_SHIFT, VM_ALLOC,
 				  range->start, range->end, NUMA_NO_NODE,
-				  GFP_KERNEL, __builtin_return_address(0));
+				  GFP_KERNEL, _RET_IP_);
 	if (!area && range->fallback_start)
 		area = __get_vm_area_node(size, range->alignment, PAGE_SHIFT, VM_ALLOC,
 					  range->fallback_start, range->fallback_end,
-					  NUMA_NO_NODE, GFP_KERNEL, __builtin_return_address(0));
+					  NUMA_NO_NODE, GFP_KERNEL, _RET_IP_);
 
 	return area;
 }

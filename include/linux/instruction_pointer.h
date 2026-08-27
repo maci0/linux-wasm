@@ -4,10 +4,20 @@
 
 #include <asm/linkage.h>
 
+#ifdef CONFIG_WASM_CORE
+/* wasm has no return addresses; use 0 */
+#define _RET_IP_		0UL
+#else
 #define _RET_IP_		(unsigned long)__builtin_return_address(0)
+#endif
 
+#ifdef CONFIG_WASM_CORE
+/* wasm backend cannot lower BlockAddress */
+#define _THIS_IP_		0UL
+#else
 #ifndef _THIS_IP_
 #define _THIS_IP_  ({ __label__ __here; __here: (unsigned long)&&__here; })
+#endif
 #endif
 
 #endif /* _LINUX_INSTRUCTION_POINTER_H */
