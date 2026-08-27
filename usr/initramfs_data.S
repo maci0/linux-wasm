@@ -22,6 +22,28 @@
   in the ELF header, as required by certain architectures.
 */
 
+#ifdef CONFIG_WASM
+/*
+ * wasm: the initramfs lives in plain .data (wasm-ld cannot place it via a
+ * linker-script section) and is never freed.  The symbol names match
+ * init/initramfs.c (__initramfs_start / __initramfs_size).
+ */
+.data
+.globl __initramfs_start
+__initramfs_start:
+.incbin "usr/initramfs_inc_data"
+__initramfs_end:
+	.size __initramfs_start, . - __initramfs_start
+	.size __initramfs_end, 0
+.globl __initramfs_size
+__initramfs_size:
+#ifdef CONFIG_64BIT
+	.quad __initramfs_end - __initramfs_start
+#else
+	.long __initramfs_end - __initramfs_start
+#endif
+	.size __initramfs_size, 4
+#else
 .section .init.ramfs,"a"
 __irf_start:
 .incbin "usr/initramfs_inc_data"
@@ -33,4 +55,5 @@ __initramfs_size:
 	.quad __irf_end - __irf_start
 #else
 	.long __irf_end - __irf_start
+#endif
 #endif

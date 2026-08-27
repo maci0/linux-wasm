@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
+# Everything not listed here falls back to include/uapi/asm-generic via
+# mandatory-y in scripts/Makefile.asm-headers.
+generated-y += unistd_32.h

@@ -15,6 +15,8 @@ CLANG_TARGET_FLAGS_x86		:= x86_64-linux-gnu
 # This is only for i386 UM builds, which need the 32-bit target not -m32
 CLANG_TARGET_FLAGS_i386		:= i386-linux-gnu
 CLANG_TARGET_FLAGS_um		:= $(CLANG_TARGET_FLAGS_$(SUBARCH))
+# wasm builds target freestanding wasm32 via zig cc
+CLANG_TARGET_FLAGS_wasm		:= wasm32-freestanding
 CLANG_TARGET_FLAGS		:= $(CLANG_TARGET_FLAGS_$(SRCARCH))
 
 ifeq ($(CLANG_TARGET_FLAGS),)
@@ -35,8 +37,12 @@ endif
 # Make it behave more like gcc by erroring when these flags are encountered
 # so they can be implemented or wrapped in cc-option.
 CLANG_FLAGS	+= -Werror=unknown-warning-option
+# zig cc turns unknown-but-ignored flags into -Werror; drop them for wasm.
+# The zig-cc.sh wrapper additionally strips the spurious -S/-M cases (zinux W02).
+ifneq ($(ARCH),wasm)
 CLANG_FLAGS	+= -Werror=ignored-optimization-argument
 CLANG_FLAGS	+= -Werror=option-ignored
 CLANG_FLAGS	+= -Werror=unused-command-line-argument
+endif
 KBUILD_CPPFLAGS	+= $(CLANG_FLAGS)
 export CLANG_FLAGS

@@ -1,0 +1,2 @@
+# wasm-specific makefile bits (analogous to Makefile-os-Linux)
+KBUILD_CFLAGS += -D__WASM__

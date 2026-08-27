@@ -1,0 +1,7 @@
+wasmux demo rootfs
+==================
+
+This is the initramfs that arch/wasm unpacks into the rootfs at boot.
+It contains no executables: the wasm port cannot fork or execute
+userspace yet, so /init is a documentation-only placeholder.  The boot
+log shows the unpacking and then "No working init found".
