@@ -10,6 +10,19 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+/*
+ * Modern glibc (2.38+) defines strrchr as a _Generic function-like macro.
+ * UML's build system passes -Dstrrchr=kernel_strrchr to rename the symbol
+ * and avoid linker conflicts with the kernel's own strrchr.  However, the
+ * -D creates an object-like macro that expands inside the glibc _Generic
+ * macro, producing a call to the undeclared 'kernel_strrchr' function.
+ *
+ * Fix: #undef strrchr to remove glibc's function-like macro, then
+ * re-establish the kernel rename with a proper declaration.
+ */
+#undef strrchr
+extern char *kernel_strrchr(const char *s, int c);
+#define strrchr kernel_strrchr
 #include <arpa/inet.h>
 #include <endian.h>
 #include "cow.h"

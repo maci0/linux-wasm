@@ -8495,8 +8495,14 @@ static struct kmem_cache * __init bootstrap(struct kmem_cache *static_cache)
 
 void __init kmem_cache_init(void)
 {
-	static __initdata struct kmem_cache boot_kmem_cache,
-		boot_kmem_cache_node;
+	/* The nonzero initializers keep the boot caches in the data segments
+	 * (and their references remappable by the wasm post-link relocator);
+	 * zero-init here would strand them at the vacated late addresses. */
+	static __initdata struct kmem_cache boot_kmem_cache = {
+		.name = "boot_kmem_cache",
+	}, boot_kmem_cache_node = {
+		.name = "boot_kmem_cache_node",
+	};
 	int node;
 
 	if (debug_guardpage_minorder())

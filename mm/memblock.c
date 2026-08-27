@@ -119,12 +119,28 @@ static bool kho_scratch_only;
 #define kho_scratch_only false
 #endif
 
+#ifdef CONFIG_WASM
+/* Defined in arch/wasm/kernel/setup.c as initialized data: wasm-ld places
+ * these arrays at the same address as the memblock struct inside
+ * .init.data, which corrupts both; the early data area keeps them clear of
+ * the segments the post-link relocator moves. */
+extern struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_MEMORY_REGIONS];
+extern struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_RESERVED_REGIONS];
+#else
 static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_MEMORY_REGIONS] __initdata_memblock;
 static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_RESERVED_REGIONS] __initdata_memblock;
+#endif
 #ifdef CONFIG_HAVE_MEMBLOCK_PHYS_MAP
 static struct memblock_region memblock_physmem_init_regions[INIT_PHYSMEM_REGIONS];
 #endif
 
+#ifdef CONFIG_WASM
+/* See arch/wasm/kernel/setup.c: the struct is defined there as early data
+ * so wasm-ld cannot place it inside the late .init.data segments (its
+ * symbol address and initializer end up in different places, which no
+ * post-link remap can repair). */
+extern struct memblock memblock;
+#else
 struct memblock memblock __initdata_memblock = {
 	.memory.regions		= memblock_memory_init_regions,
 	.memory.max		= INIT_MEMBLOCK_MEMORY_REGIONS,
@@ -137,6 +153,7 @@ struct memblock memblock __initdata_memblock = {
 	.bottom_up		= false,
 	.current_limit		= MEMBLOCK_ALLOC_ANYWHERE,
 };
+#endif
 
 #ifdef CONFIG_HAVE_MEMBLOCK_PHYS_MAP
 struct memblock_type physmem = {

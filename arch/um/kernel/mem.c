@@ -148,8 +148,10 @@ DECLARE_VM_GET_PAGE_PROT
 
 void mark_rodata_ro(void)
 {
+#ifndef CONFIG_LD_IS_LLD
 	unsigned long rodata_start = PFN_ALIGN(__start_rodata);
 	unsigned long rodata_end = PFN_ALIGN(__end_rodata);
 
 	os_protect_memory((void *)rodata_start, rodata_end - rodata_start, 1, 0, 0);
+#endif
 }

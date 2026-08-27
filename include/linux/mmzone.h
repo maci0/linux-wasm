@@ -1660,12 +1660,26 @@ static inline bool has_managed_dma(void)
 
 
 #ifndef CONFIG_NUMA
-
+#ifdef CONFIG_WASM
+/*
+ * wasm: wasm-ld assigns the zero-initialized statics (including the
+ * generic contig_page_data) addresses that overlap the module's
+ * initialized data segments, corrupting the page allocator.  Use a
+ * wasm-owned pglist_data that is initialized data in an early-compiled
+ * arch/wasm object, so the module layout places it cleanly.
+ */
+extern struct pglist_data wasm_node_data;
+static inline struct pglist_data *NODE_DATA(int nid)
+{
+	return &wasm_node_data;
+}
+#else
 extern struct pglist_data contig_page_data;
 static inline struct pglist_data *NODE_DATA(int nid)
 {
 	return &contig_page_data;
 }
+#endif
 
 #else /* CONFIG_NUMA */
 

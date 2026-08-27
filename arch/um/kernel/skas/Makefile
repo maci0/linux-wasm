@@ -24,10 +24,10 @@ $(obj)/stub_exe: $(obj)/stub_exe.dbg FORCE
 
 quiet_cmd_stub_exe = STUB_EXE $@
       cmd_stub_exe = $(CC) -nostdlib -o $@ \
-			   $(filter-out $(UM_GPROF_OPT) $(UM_GCOV_OPT),$(KBUILD_CFLAGS)) $(STUB_EXE_LDFLAGS) \
-			   $(filter %.o,$^)
+			   $(filter-out $(UM_GPROF_OPT) $(UM_GCOV_OPT),$(KBUILD_CFLAGS)) \
+			   $(STUB_EXE_LDFLAGS) $(filter %.o,$^)
 
-STUB_EXE_LDFLAGS = -Wl,-n -static
+STUB_EXE_LDFLAGS = -static -T $(srctree)/$(src)/stub_exe.lds
 
 targets += stub_exe.dbg stub_exe $(stub_exe_objs-y)
 

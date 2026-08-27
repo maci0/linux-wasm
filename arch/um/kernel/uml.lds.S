@@ -13,6 +13,44 @@ VERSION {
   };
 }
 
+#ifdef CONFIG_LD_IS_LLD
+/*
+ * Explicit program headers (PHDRS) for lld compatibility.
+ *
+ * lld creates a new PT_LOAD segment for each group of sections with
+ * different flags.  With the UML linker script, this produces 20+
+ * LOAD segments, many of which share the same page with different
+ * permissions.  UML's ELF loader cannot mmap() overlapping page
+ * ranges, causing a crash at boot.
+ *
+ * GNU ld (bfd) merges adjacent sections aggressively and produces a
+ * correct layout without explicit PHDRS, so this block is lld-only.
+ *
+ * Layout:
+ *   headers (R)   - ELF + program headers (needed by glibc static
+ *                   init which reads e_phnum at the load base)
+ *   text    (R_E) - all executable code
+ *   data    (RWE) - everything else (rodata has WA flags in the
+ *                   kernel, .exit.text/.altinstr_replacement are AX)
+ *   tls            - thread-local storage template (.tdata + .tbss)
+ */
+PHDRS {
+	headers PT_LOAD FILEHDR PHDRS FLAGS(4);  /* PF_R */
+	text PT_LOAD FLAGS(5);                   /* PF_R|PF_X */
+	data PT_LOAD FLAGS(7);                   /* PF_R|PF_W|PF_X */
+	tls  PT_TLS FLAGS(4);                    /* PF_R */
+}
+#define PHDR_TEXT :text
+#define PHDR_DATA :data
+#define PHDR_DATA_TLS :data :tls
+#define PHDR_AFTER_TLS .after_tls : { BYTE(0) } :data
+#else /* !CONFIG_LD_IS_LLD */
+#define PHDR_TEXT
+#define PHDR_DATA
+#define PHDR_DATA_TLS
+#define PHDR_AFTER_TLS
+#endif
+
 SECTIONS
 {
   /* This must contain the right address - not quite the default ELF one.*/
@@ -28,7 +66,7 @@ SECTIONS
   . = ALIGN(PAGE_SIZE);
 
   _text = .;
-  INIT_TEXT_SECTION(0)
+  INIT_TEXT_SECTION(0) PHDR_TEXT
 
   .text      :
   {
@@ -65,6 +103,13 @@ SECTIONS
 	*(.rela.plt)
 	PROVIDE_HIDDEN(__rela_iplt_start = .);
 	*(.rela.iplt)
+	/*
+	 * lld places IRELATIVE relocations in .rela.dyn rather than
+	 * .rela.iplt.  Include .rela.dyn here so __rela_iplt_{start,end}
+	 * brackets all IFUNC relocations for glibc's static resolver.
+	 * With bfd this section is empty and has no effect.
+	 */
+	*(.rela.dyn)
 	PROVIDE_HIDDEN(__rela_iplt_end = .);
   }
 
@@ -94,12 +139,19 @@ SECTIONS
   .got           : { *(.got.plt) *(.got) }
   .eh_frame       : { KEEP (*(.eh_frame)) }
   .dynamic       : { *(.dynamic) }
-  .tdata	  : { *(.tdata .tdata.* .gnu.linkonce.td.*) }
-  .tbss		  : { *(.tbss .tbss.* .gnu.linkonce.tb.*) *(.tcommon) }
   /* We want the small data sections together, so single-instruction offsets
      can access them all, and initialized data all before uninitialized, so
      we can shorten the on-disk segment size.  */
   .sdata     : { *(.sdata) }
+  /*
+   * TLS sections placed last before BSS.  With lld's explicit PHDRS,
+   * this ensures PT_TLS covers only .tdata/.tbss (lld extends each
+   * PHDR to span all sections assigned to it).  PHDR_AFTER_TLS emits
+   * a dummy section to switch back from :data :tls to :data only.
+   */
+  .tdata	  : { *(.tdata .tdata.* .gnu.linkonce.td.*) } PHDR_DATA_TLS
+  .tbss		  : { *(.tbss .tbss.* .gnu.linkonce.tb.*) *(.tcommon) } PHDR_DATA_TLS
+  PHDR_AFTER_TLS
   _edata  =  .;
   PROVIDE (edata = .);
   . = ALIGN(PAGE_SIZE);

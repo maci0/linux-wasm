@@ -6,8 +6,18 @@
   PROVIDE (etext = .);
 
   . = ALIGN(4096);
-  _sdata = .;
-  PROVIDE (sdata = .);
+
+  /*
+   * Switch to the data PHDR (lld only, via PHDR_DATA macro).
+   * All sections from here through .bss go into a single RWE LOAD
+   * segment, avoiding the per-flag-change segment splitting that lld
+   * performs (which causes fatal page overlaps in UML).
+   * See PHDRS definition in uml.lds.S / dyn.lds.S.
+   */
+  .data_phdr_start : {
+	_sdata = .;
+	PROVIDE (sdata = .);
+  } PHDR_DATA
 
   RO_DATA(4096)
 

@@ -717,6 +717,12 @@ static inline int pindex_to_order(unsigned int pindex)
 
 static inline bool pcp_allowed_order(unsigned int order)
 {
+#ifdef CONFIG_WASM
+	/* The per-cpu pageset statics land inside the boot-parameter string
+	 * section in the wasm-ld layout; route through the zone lists so the
+	 * pages are not linked into the corrupted per-cpu lists. */
+	return false;
+#else
 	if (order <= PAGE_ALLOC_COSTLY_ORDER)
 		return true;
 #ifdef CONFIG_TRANSPARENT_HUGEPAGE
@@ -724,6 +730,7 @@ static inline bool pcp_allowed_order(unsigned int order)
 		return true;
 #endif
 	return false;
+#endif
 }
 
 /*

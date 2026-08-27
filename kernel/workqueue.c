@@ -535,7 +535,6 @@ static void show_one_worker_pool(struct worker_pool *pool);
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/workqueue.h>
-
 #define assert_rcu_or_pool_mutex()					\
 	RCU_LOCKDEP_WARN(!rcu_read_lock_any_held() &&			\
 			 !lockdep_is_held(&wq_pool_mutex),		\
@@ -7757,6 +7756,7 @@ static void __init init_cpu_worker_pool(struct worker_pool *pool, int cpu, int n
  * execution starts only after kthreads can be created and scheduled right
  * before early initcalls.
  */
+
 void __init workqueue_init_early(void)
 {
 	struct wq_pod_type *pt = &wq_pod_types[WQ_AFFN_SYSTEM];
@@ -7811,17 +7811,21 @@ void __init workqueue_init_early(void)
 	for_each_possible_cpu(cpu) {
 		struct worker_pool *pool;
 
+
+
 		i = 0;
 		for_each_bh_worker_pool(pool, cpu) {
 			init_cpu_worker_pool(pool, cpu, std_nice[i]);
+
 			pool->flags |= POOL_BH;
 			init_irq_work(bh_pool_irq_work(pool), irq_work_fns[i]);
 			i++;
 		}
 
 		i = 0;
-		for_each_cpu_worker_pool(pool, cpu)
+		for_each_cpu_worker_pool(pool, cpu) {
 			init_cpu_worker_pool(pool, cpu, std_nice[i++]);
+		}
 	}
 
 	/* create default unbound and ordered wq attrs */
