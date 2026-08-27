@@ -74,3 +74,13 @@ void __init time_init(void)
 {
 	wasm_timer_init();
 }
+
+/*
+ * The cooperative wasm host has no timer ticks while start_kernel runs, so
+ * the jiffies-based calibration loop would spin forever.  Report a fixed
+ * loops-per-jiffy instead (matches the lpj=1000000 default command line).
+ */
+unsigned long calibrate_delay_is_known(void)
+{
+	return 1000000;
+}

@@ -65,40 +65,22 @@ typedef struct {
 #define arch_atomic64_fetch_or(a, v)	__atomic_fetch_or(&(v)->counter, (a), __ATOMIC_SEQ_CST)
 #define arch_atomic64_fetch_xor(a, v)	__atomic_fetch_xor(&(v)->counter, (a), __ATOMIC_SEQ_CST)
 
-/* exchange / compare-exchange */
-#define arch_atomic_xchg(v, n)		__atomic_exchange_n(&(v)->counter, (n), __ATOMIC_SEQ_CST)
-#define arch_atomic64_xchg(v, n)	__atomic_exchange_n(&(v)->counter, (n), __ATOMIC_SEQ_CST)
+/* exchange / compare-exchange (plain-C, see asm/cmpxchg.h for why the
+ * __atomic_* builtins must not be used) */
+#define arch_atomic_xchg(v, n)		arch_xchg(&(v)->counter, (n))
+#define arch_atomic64_xchg(v, n)	arch_xchg(&(v)->counter, (n))
 
 static inline int arch_atomic_cmpxchg(atomic_t *v, int old, int new)
 {
-	int expected = old;
-	__atomic_compare_exchange_n(&v->counter, &expected, new, 0,
-				    __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-	return expected;
+	return arch_cmpxchg(&v->counter, old, new);
 }
 
 static inline s64 arch_atomic64_cmpxchg(atomic64_t *v, s64 old, s64 new)
 {
-	s64 expected = old;
-	__atomic_compare_exchange_n(&v->counter, &expected, new, 0,
-				    __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-	return expected;
+	return arch_cmpxchg64(&v->counter, old, new);
 }
 
-#define arch_atomic_try_cmpxchg(v, p, n) ({				\
-	bool __ret;							\
-	int __old = *(p);						\
-	__ret = __atomic_compare_exchange_n(&(v)->counter, &__old,	\
-			(n), 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);	\
-	if (!__ret) *(p) = __old;					\
-	__ret; })
-
-#define arch_atomic64_try_cmpxchg(v, p, n) ({				\
-	bool __ret;							\
-	s64 __old = *(p);						\
-	__ret = __atomic_compare_exchange_n(&(v)->counter, &__old,	\
-			(n), 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);	\
-	if (!__ret) *(p) = __old;					\
-	__ret; })
+#define arch_atomic_try_cmpxchg(v, p, n)	arch_try_cmpxchg(&(v)->counter, (p), (n))
+#define arch_atomic64_try_cmpxchg(v, p, n)	arch_try_cmpxchg(&(v)->counter, (p), (n))
 
 #endif /* __ASM_WASM_ATOMIC_H */

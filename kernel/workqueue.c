@@ -5592,6 +5592,9 @@ static int init_rescuer(struct workqueue_struct *wq)
 	if (!(wq->flags & WQ_MEM_RECLAIM))
 		return 0;
 
+#ifndef CONFIG_WASM
+	/* The rescuer is a kthread; the cooperative wasm model cannot run
+	 * kthreads, and without workers there is nothing to rescue. */
 	rescuer = alloc_worker(NUMA_NO_NODE);
 	if (!rescuer) {
 		pr_err("workqueue: Failed to allocate a rescuer for wq \"%s\"\n",
@@ -5622,6 +5625,11 @@ static int init_rescuer(struct workqueue_struct *wq)
 	wake_up_process(rescuer->task);
 
 	return 0;
+#else
+	/* no rescuer on wasm: kthreads cannot run (see above) */
+	wq->rescuer = NULL;
+	return 0;
+#endif
 }
 
 /**
@@ -7874,8 +7882,15 @@ static void __init wq_cpu_intensive_thresh_init(void)
 	unsigned long thresh;
 	unsigned long bogo;
 
+#ifndef CONFIG_WASM
 	pwq_release_worker = kthread_run_worker(0, "pool_workqueue_release");
 	BUG_ON(IS_ERR(pwq_release_worker));
+#else
+	/* kthreads cannot run in the cooperative wasm model; the release
+	 * worker (a kthread) is left unset and the pwq release paths that
+	 * need it are never exercised during boot. */
+	pwq_release_worker = NULL;
+#endif
 
 	/* if the user set it to a specific value, keep it */
 	if (wq_cpu_intensive_thresh_us != ULONG_MAX)
@@ -7939,9 +7954,11 @@ void __init workqueue_init(void)
 	}
 
 	list_for_each_entry(wq, &workqueues, list) {
+#ifndef CONFIG_WASM
 		WARN(init_rescuer(wq),
 		     "workqueue: failed to create early rescuer for %s",
 		     wq->name);
+#endif
 	}
 
 	mutex_unlock(&wq_pool_mutex);
@@ -7951,6 +7968,13 @@ void __init workqueue_init(void)
 	 * represents the shared BH execution context and thus doesn't get
 	 * affected by hotplug events. Create the BH pseudo workers for all
 	 * possible CPUs here.
+	 */
+#ifndef CONFIG_WASM
+	/*
+	 * Workers are kthreads; the cooperative wasm model cannot run them
+	 * (a kthread body never returns, blocking the nested call stack), so
+	 * the worker pools stay empty and queued work is never executed.
+	 * The port's explicit initcalls do not depend on work execution.
 	 */
 	for_each_possible_cpu(cpu)
 		for_each_bh_worker_pool(pool, cpu)
@@ -7965,6 +7989,7 @@ void __init workqueue_init(void)
 
 	hash_for_each(unbound_pool_hash, bkt, pool, hash_node)
 		BUG_ON(!create_worker(pool));
+#endif
 
 	wq_online = true;
 	wq_watchdog_init();

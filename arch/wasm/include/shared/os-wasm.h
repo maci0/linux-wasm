@@ -42,9 +42,17 @@ WASM_HOST_IMPORT("wasm_timer_arm")
 void wasm_timer_arm(unsigned long long ns);  /* one-shot; fires irq 0 */
 WASM_HOST_IMPORT("wasm_random")
 int  wasm_random(void *buf, int len);
+WASM_HOST_IMPORT("wasm_shell_wait")
+int  wasm_shell_wait(void *buf, int max_len);  /* blocks until a line of console input is available */
 
 /* os-layer prototypes (implemented in arch/wasm/os-wasm/os.c) */
 void os_idle_sleep(unsigned long long nsecs);
 void os_idle_prepare(void);
+
+/* kernel-resident shell (arch/wasm/kernel/shell.c), exported to the
+ * runtime so it can drive interactive input */
+char *wasm_shell_scratch(void);
+void wasm_shell_input(const char *data, int len);
+void wasm_shell(void);
 
 #endif /* __OS_WASM_H */

@@ -8495,6 +8495,14 @@ static struct kmem_cache * __init bootstrap(struct kmem_cache *static_cache)
 
 void __init kmem_cache_init(void)
 {
+#ifdef CONFIG_WASM
+	/* Defined in arch/wasm/kernel/setup.c as early initialized data:
+	 * wasm-ld splits these boot caches (symbol vs initializer content)
+	 * and the kernel's references end up split across two addresses,
+	 * which desyncs the SLUB accounting.  Early data gives them one
+	 * stable address. */
+	extern struct kmem_cache boot_kmem_cache, boot_kmem_cache_node;
+#else
 	/* The nonzero initializers keep the boot caches in the data segments
 	 * (and their references remappable by the wasm post-link relocator);
 	 * zero-init here would strand them at the vacated late addresses. */
@@ -8503,6 +8511,7 @@ void __init kmem_cache_init(void)
 	}, boot_kmem_cache_node = {
 		.name = "boot_kmem_cache_node",
 	};
+#endif
 	int node;
 
 	if (debug_guardpage_minorder())

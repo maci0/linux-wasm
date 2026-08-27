@@ -495,6 +495,7 @@ int __init devtmpfs_init(void)
 		return err;
 	}
 
+#ifndef CONFIG_WASM
 	thread = kthread_run(devtmpfsd, &err, "kdevtmpfs");
 	if (!IS_ERR(thread)) {
 		wait_for_completion(&setup_done);
@@ -502,6 +503,12 @@ int __init devtmpfs_init(void)
 		err = PTR_ERR(thread);
 		thread = NULL;
 	}
+#else
+	/* No devtmpfs daemon on wasm: kthreads cannot run in the cooperative
+	 * model and there are no devices to populate anyway. */
+	thread = NULL;
+	err = 0;
+#endif
 
 	if (err) {
 		pr_err("unable to create devtmpfs %d\n", err);
