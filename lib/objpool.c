@@ -82,7 +82,7 @@ objpool_init_percpu_slots(struct objpool_head *pool, int nr_objs,
 
 		if ((pool->gfp & (GFP_ATOMIC | GFP_KERNEL)) != GFP_ATOMIC)
 			slot = __vmalloc_node(size, sizeof(void *), pool->gfp,
-				cpu_to_node(i), __builtin_return_address(0));
+				cpu_to_node(i), _RET_IP_);
 
 		if (!slot) {
 			slot = kmalloc_node(size, pool->gfp, cpu_to_node(i));

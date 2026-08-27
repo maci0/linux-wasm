@@ -393,7 +393,11 @@ static __always_inline void spin_unlock(spinlock_t *lock)
 static __always_inline void spin_unlock_bh(spinlock_t *lock)
 	__releases(lock) __no_context_analysis
 {
+#ifdef CONFIG_WASM_CORE
+	_raw_spin_unlock_bh(&lock->rlock);
+#else
 	raw_spin_unlock_bh(&lock->rlock);
+#endif
 }
 
 static __always_inline void spin_unlock_irq(spinlock_t *lock)

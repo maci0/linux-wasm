@@ -357,8 +357,7 @@ static int alloc_thread_stack_node(struct task_struct *tsk, int node)
 	}
 
 	stack = __vmalloc_node(THREAD_SIZE, THREAD_ALIGN,
-				     GFP_VMAP_STACK,
-				     node, __builtin_return_address(0));
+				     GFP_VMAP_STACK, node, _RET_IP_);
 	if (!stack)
 		return -ENOMEM;
 

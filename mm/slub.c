@@ -6932,7 +6932,7 @@ void *__kvmalloc_node_noprof(DECL_KMALLOC_PARAMS(size, b, token), unsigned long 
 	 */
 	return __vmalloc_node_range_noprof(size, align, VMALLOC_START, VMALLOC_END,
 			flags, PAGE_KERNEL, allow_block ? VM_ALLOW_HUGE_VMAP:0,
-			node, __builtin_return_address(0));
+			node, _RET_IP_);
 }
 EXPORT_SYMBOL(__kvmalloc_node_noprof);
 

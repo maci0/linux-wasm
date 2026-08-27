@@ -6093,7 +6093,7 @@ static inline void schedule_debug(struct task_struct *prev, bool preempt)
 	rcu_sleep_check();
 	WARN_ON_ONCE(ct_state() == CT_STATE_USER);
 
-	profile_hit(SCHED_PROFILING, __builtin_return_address(0));
+	profile_hit(SCHED_PROFILING, _RET_IP_);
 
 	schedstat_inc(this_rq()->sched_count);
 }

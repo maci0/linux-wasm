@@ -3290,7 +3290,7 @@ struct vm_struct *get_vm_area(unsigned long size, unsigned long flags)
 	return __get_vm_area_node(size, 1, PAGE_SHIFT, flags,
 				  VMALLOC_START, VMALLOC_END,
 				  NUMA_NO_NODE, GFP_KERNEL,
-				  __builtin_return_address(0));
+				  _RET_IP_);
 }
 
 struct vm_struct *get_vm_area_caller(unsigned long size, unsigned long flags,
@@ -3579,7 +3579,7 @@ void *vmap(struct page **pages, unsigned int count,
 		return NULL;
 
 	size = (unsigned long)count << PAGE_SHIFT;
-	area = get_vm_area_caller(size, flags, __builtin_return_address(0));
+	area = get_vm_area_caller(size, flags, _RET_IP_);
 	if (!area)
 		return NULL;
 
@@ -3636,7 +3636,7 @@ void *vmap_pfn(unsigned long *pfns, unsigned int count, pgprot_t prot)
 	struct vm_struct *area;
 
 	area = get_vm_area_caller(count * PAGE_SIZE, VM_IOREMAP,
-			__builtin_return_address(0));
+			_RET_IP_);
 	if (!area)
 		return NULL;
 	if (apply_to_page_range(&init_mm, (unsigned long)area->addr,
@@ -4179,7 +4179,7 @@ void *__vmalloc_noprof(unsigned long size, gfp_t gfp_mask)
 	if (unlikely(gfp_mask & ~GFP_VMALLOC_SUPPORTED))
 		gfp_mask = vmalloc_fix_flags(gfp_mask);
 	return __vmalloc_node_noprof(size, 1, gfp_mask, NUMA_NO_NODE,
-				__builtin_return_address(0));
+				_RET_IP_);
 }
 EXPORT_SYMBOL(__vmalloc_noprof);
 
@@ -4198,7 +4198,7 @@ EXPORT_SYMBOL(__vmalloc_noprof);
 void *vmalloc_noprof(unsigned long size)
 {
 	return __vmalloc_node_noprof(size, 1, GFP_KERNEL, NUMA_NO_NODE,
-				__builtin_return_address(0));
+				_RET_IP_);
 }
 EXPORT_SYMBOL(vmalloc_noprof);
 
@@ -4221,7 +4221,7 @@ void *vmalloc_huge_node_noprof(unsigned long size, gfp_t gfp_mask, int node)
 		gfp_mask = vmalloc_fix_flags(gfp_mask);
 	return __vmalloc_node_range_noprof(size, 1, VMALLOC_START, VMALLOC_END,
 					   gfp_mask, PAGE_KERNEL, VM_ALLOW_HUGE_VMAP,
-					   node, __builtin_return_address(0));
+					   node, _RET_IP_);
 }
 EXPORT_SYMBOL_GPL(vmalloc_huge_node_noprof);
 
@@ -4241,7 +4241,7 @@ EXPORT_SYMBOL_GPL(vmalloc_huge_node_noprof);
 void *vzalloc_noprof(unsigned long size)
 {
 	return __vmalloc_node_noprof(size, 1, GFP_KERNEL | __GFP_ZERO, NUMA_NO_NODE,
-				__builtin_return_address(0));
+				_RET_IP_);
 }
 EXPORT_SYMBOL(vzalloc_noprof);
 
@@ -4259,7 +4259,7 @@ void *vmalloc_user_noprof(unsigned long size)
 	return __vmalloc_node_range_noprof(size, SHMLBA,  VMALLOC_START, VMALLOC_END,
 				    GFP_KERNEL | __GFP_ZERO, PAGE_KERNEL,
 				    VM_USERMAP, NUMA_NO_NODE,
-				    __builtin_return_address(0));
+				    _RET_IP_);
 }
 EXPORT_SYMBOL(vmalloc_user_noprof);
 
@@ -4279,7 +4279,7 @@ EXPORT_SYMBOL(vmalloc_user_noprof);
 void *vmalloc_node_noprof(unsigned long size, int node)
 {
 	return __vmalloc_node_noprof(size, 1, GFP_KERNEL, node,
-			__builtin_return_address(0));
+			_RET_IP_);
 }
 EXPORT_SYMBOL(vmalloc_node_noprof);
 
@@ -4297,7 +4297,7 @@ EXPORT_SYMBOL(vmalloc_node_noprof);
 void *vzalloc_node_noprof(unsigned long size, int node)
 {
 	return __vmalloc_node_noprof(size, 1, GFP_KERNEL | __GFP_ZERO, node,
-				__builtin_return_address(0));
+				_RET_IP_);
 }
 EXPORT_SYMBOL(vzalloc_node_noprof);
 
@@ -4450,7 +4450,7 @@ void *vrealloc_node_align_noprof(const void *p, size_t size, unsigned long align
 
 need_realloc:
 	/* TODO: Grow the vm_area, i.e. allocate and map additional pages. */
-	n = __vmalloc_node_noprof(size, align, flags, nid, __builtin_return_address(0));
+	n = __vmalloc_node_noprof(size, align, flags, nid, _RET_IP_);
 
 	if (!n)
 		return NULL;
@@ -4488,7 +4488,7 @@ EXPORT_SYMBOL(vrealloc_node_align_noprof);
 void *vmalloc_32_noprof(unsigned long size)
 {
 	return __vmalloc_node_noprof(size, 1, GFP_VMALLOC32, NUMA_NO_NODE,
-			__builtin_return_address(0));
+			_RET_IP_);
 }
 EXPORT_SYMBOL(vmalloc_32_noprof);
 
@@ -4506,7 +4506,7 @@ void *vmalloc_32_user_noprof(unsigned long size)
 	return __vmalloc_node_range_noprof(size, SHMLBA,  VMALLOC_START, VMALLOC_END,
 				    GFP_VMALLOC32 | __GFP_ZERO, PAGE_KERNEL,
 				    VM_USERMAP, NUMA_NO_NODE,
-				    __builtin_return_address(0));
+				    _RET_IP_);
 }
 EXPORT_SYMBOL(vmalloc_32_user_noprof);
 

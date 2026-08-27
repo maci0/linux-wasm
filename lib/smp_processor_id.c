@@ -43,7 +43,7 @@ unsigned int check_preemption_disabled(const char *what1, const char *what2)
 	printk(KERN_ERR "BUG: using %s%s() in preemptible [%08x] code: %s/%d\n",
 		what1, what2, preempt_count() - 1, current->comm, current->pid);
 
-	printk("caller is %pS\n", __builtin_return_address(0));
+	printk("caller is %pS\n", _RET_IP_);
 	dump_stack();
 
 out_enable:

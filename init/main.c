@@ -1411,6 +1411,16 @@ static void __init do_initcall_level(int level, char *command_line)
 
 static void __init do_initcalls(void)
 {
+#ifdef CONFIG_WASM
+	/*
+	 * wasm-ld cannot lay out the .initcall*.init sections, so the
+	 * initcall levels are empty.  Run the initcalls the port needs
+	 * explicitly instead.
+	 */
+	int __init populate_rootfs(void);
+
+	populate_rootfs();
+#else
 	int level;
 	size_t len = saved_command_line_len + 1;
 	char *command_line;
@@ -1426,6 +1436,7 @@ static void __init do_initcalls(void)
 	}
 
 	kfree(command_line);
+#endif
 }
 
 /*
