@@ -706,7 +706,14 @@ static noinline void __ref __noreturn rest_init(void)
 	 */
 	system_state = SYSTEM_SCHEDULING;
 
+#ifndef CONFIG_WASM
+	/*
+	 * The completion's static self-referential LIST_HEAD_INIT initializer
+	 * is split by wasm-ld, so complete() would walk a garbage wait list.
+	 * kernel_init does not wait for kthreadd on wasm either.
+	 */
 	complete(&kthreadd_done);
+#endif
 
 	/*
 	 * The boot idle thread must execute schedule()
@@ -1460,9 +1467,11 @@ static void __init do_pre_smp_initcalls(void)
 {
 	initcall_entry_t *fn;
 
+#ifndef CONFIG_WASM
 	do_trace_initcall_level("early");
 	for (fn = __initcall_start; fn < __initcall0_start; fn++)
 		do_one_initcall(initcall_from_entry(fn));
+#endif
 }
 
 static int run_init_process(const char *init_filename)
@@ -1554,7 +1563,9 @@ static int __ref kernel_init(void *unused)
 	/*
 	 * Wait until kthreadd is all set-up.
 	 */
+#ifndef CONFIG_WASM
 	wait_for_completion(&kthreadd_done);
+#endif
 
 	kernel_init_freeable();
 	/* need to finish all async __init code before freeing the memory */
@@ -1580,6 +1591,18 @@ static int __ref kernel_init(void *unused)
 	rcu_end_inkernel_boot();
 
 	do_sysctl_args();
+
+#ifdef CONFIG_WASM
+	/*
+	 * wasm32 cannot exec native binaries (no userspace ABI), so the
+	 * kernel-resident shell takes the place of /init; it never returns
+	 * from the kernel's point of view (control returns to the runtime
+	 * once the shell prints its prompt, and the runtime drives it).
+	 */
+	extern void __init wasm_shell(void);
+	wasm_shell();
+	return 0;
+#endif
 
 	if (ramdisk_execute_command) {
 		ret = run_init_process(ramdisk_execute_command);

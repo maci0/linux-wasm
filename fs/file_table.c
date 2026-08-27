@@ -555,7 +555,14 @@ static DECLARE_DELAYED_WORK(delayed_fput_work, delayed_fput);
 void flush_delayed_fput(void)
 {
 	delayed_fput(NULL);
+#ifndef CONFIG_WASM
+	/* The wasm port runs cooperative (no workqueue kthreads, see
+	 * arch/wasm/kernel/process.c), so a queued delayed_fput_work can
+	 * never execute and flushing it would spin forever.  The direct
+	 * drain above already ran the pending fputs; the stale queued work
+	 * instance is harmless (its timer never fires). */
 	flush_delayed_work(&delayed_fput_work);
+#endif
 }
 EXPORT_SYMBOL_GPL(flush_delayed_fput);
 

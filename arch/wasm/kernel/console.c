@@ -45,13 +45,8 @@ void __init wasm_console_early_init(void)
 	register_console(&wasm_console);
 }
 
-/* ---- input path: exported to the runtime ---- */
-
-void wasm_console_input(const char *data, int len)
-{
-	/* TODO: wire to the tty layer once a tty driver is registered.
-	 * For now drop input on the floor, the shell comes later. */
-}
+/* ---- input path: the exported wasm_console_input() lives in shell.c
+ * and feeds the kernel-resident shell (arch/wasm/kernel/shell.c). ---- */
 
 static int __init wasm_console_init(void)
 {

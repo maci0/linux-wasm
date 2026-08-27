@@ -13,6 +13,8 @@
 #include <linux/seq_file.h>
 #include <linux/random.h>
 #include <linux/string.h>
+#include <linux/sched.h>
+#include <linux/sched/task.h>
 #include <asm/page.h>
 #include <asm/sections.h>
 #include <asm/setup.h>
@@ -61,6 +63,11 @@ const struct seq_operations cpuinfo_op = {
 void __init setup_arch(char **cmdline_p)
 {
 	u8 rng_seed[32];
+
+	/* fork_init() sizes the task_struct cache from this (the port selects
+	 * CONFIG_ARCH_WANTS_DYNAMIC_TASK_STRUCT like UML); without an explicit
+	 * value the cache is created with a zero object size. */
+	arch_task_struct_size = sizeof(struct task_struct);
 
 	/* Print the whole boot log as it happens, not at device_initcall */
 	wasm_console_early_init();
@@ -122,5 +129,20 @@ struct memblock memblock = {
 
 	.bottom_up		= false,
 	.current_limit		= MEMBLOCK_ALLOC_ANYWHERE,
+};
+
+/*
+ * The SLUB boot caches (kmem_cache, kmem_cache_node).  wasm-ld splits
+ * these symbols from their initializer content, and the kernel's
+ * references end up pointing at two different copies, which desyncs the
+ * slab accounting.  Early data gives them one stable address; see
+ * mm/slub.c (kmem_cache_init).
+ */
+#include "../../../mm/slab.h"
+struct kmem_cache boot_kmem_cache = {
+	.name = "boot_kmem_cache",
+};
+struct kmem_cache boot_kmem_cache_node = {
+	.name = "boot_kmem_cache_node",
 };
 #endif

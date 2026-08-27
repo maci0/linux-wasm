@@ -4395,6 +4395,15 @@ void __init console_init(void)
 	/* Setup the default TTY line discipline. */
 	n_tty_init();
 
+#ifdef CONFIG_WASM
+	/*
+	 * The console-initcall section is empty on wasm: wasm-ld cannot
+	 * lay out the custom .initcall*.init sections, so the markers are
+	 * plain symbols (arch/wasm/kernel/markers.c) and iterating them
+	 * would call through garbage.  The port registers its console
+	 * explicitly in setup_arch.
+	 */
+#else
 	/*
 	 * set up the console device so that later boot sequences can
 	 * inform about problems etc..
@@ -4408,6 +4417,7 @@ void __init console_init(void)
 		trace_initcall_finish(call, ret);
 		ce++;
 	}
+#endif
 }
 
 /*

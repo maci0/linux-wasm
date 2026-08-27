@@ -2832,7 +2832,26 @@ static inline const struct sched_class *next_active_class(const struct sched_cla
 	     __sc_i < wasm_sched_class_count &&				\
 	     ((class) = wasm_sched_classes[__sc_i]); __sc_i++)
 
-#define for_active_class_range(class, _from, _to)	for_each_class(class)
+/*
+ * The wasm scheduler classes live in an explicit table (see
+ * arch/wasm/kernel/sched.c) instead of a linker-ordered section, so the
+ * generic pointer-range walk does not apply.  Iterate the table from
+ * _from up to (but not including) _to.
+ */
+static inline const struct sched_class *
+wasm_next_active_class(const struct sched_class *class)
+{
+	unsigned int i;
+
+	for (i = 0; i + 1 < wasm_sched_class_count; i++)
+		if (wasm_sched_classes[i] == class)
+			return wasm_sched_classes[i + 1];
+	return NULL;
+}
+
+#define for_active_class_range(class, _from, _to)			\
+	for (class = (_from); class != (_to);				\
+	     class = wasm_next_active_class(class))
 #else
 #define for_each_class(class) \
 	for_class_range(class, __sched_class_highest, __sched_class_lowest)

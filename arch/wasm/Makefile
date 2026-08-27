@@ -42,7 +42,8 @@ vmlinux.wasm: vmlinux.a
 		-Wl,--no-entry \
 		-Wl,--initial-memory=268435456 \
 		-Wl,--export=start_kernel \
-		-Wl,--export=wasm_console_input \
+		-Wl,--export=wasm_shell_input \
+		-Wl,--export=wasm_shell_scratch \
 		-Wl,--export=wasm_raise_irq \
 		-Wl,--export-memory \
 		-o $@ vmlinux.a
