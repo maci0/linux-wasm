@@ -144,28 +144,42 @@ static void shell_handle_line(char *line)
 	}
 }
 
+/*
+ * The shell owns the line discipline: it echoes each keystroke, handles
+ * backspace, and prints the newline on Enter, so the runtime only needs
+ * to forward raw input bytes (browser keys, or the host tty in raw
+ * mode).  This keeps the typed command and the output on separate lines
+ * and makes editing behave like a real terminal.
+ */
 void wasm_shell_input(const char *data, int len)
 {
-	/* Echo is the runtime's job (the host tty or the web terminal echoes
-	 * as the user types); the kernel only buffers and reacts. */
 	while (len-- > 0) {
 		char c = *data++;
 
 		if (c == '\n' || c == '\r') {
+			shell_puts("\n");
 			shell_line[shell_line_len] = '\0';
 			shell_handle_line(shell_line);
 			shell_prompt();
 			shell_line_len = 0;
-		} else if (shell_line_len < SHELL_LINE_MAX - 1) {
+		} else if (c == '\x7f' && shell_line_len > 0) {
+			/* backspace: drop the char and erase it on the console */
+			shell_line_len--;
+			shell_puts("\b \b");
+		} else if (c >= ' ' && c < '\x7f' &&
+			   shell_line_len < SHELL_LINE_MAX - 1) {
 			shell_line[shell_line_len++] = c;
+			wasm_console_write(&c, 1);
 		}
+		/* other control characters are ignored */
 	}
 }
 
 /* called from kernel_init instead of exec'ing /init; never returns.
  * The shell loop is driven by the wasm_shell_wait import: the runtime
- * either blocks reading a line (wasmtime) or unwinds control back to
- * the host (browser), which then feeds lines via wasm_shell_input(). */
+ * either blocks reading input (wasmtime/wasmer, raw mode) or unwinds
+ * control back to the host (browser), which then feeds raw keystrokes
+ * via wasm_shell_input(). */
 void __init wasm_shell(void)
 {
 	int n;
