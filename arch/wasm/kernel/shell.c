@@ -3,11 +3,11 @@
  * arch/wasm/kernel/shell.c: kernel-resident init shell.
  *
  * wasm32 cannot exec native binaries, so instead of running /init the
- * port runs this small shell.  It is host-driven: wasm_shell() prints a
- * banner and returns, so start_kernel() hands control back to the runtime
- * (browser worker / wasmtime / wasmer).  The runtime then stages input
- * bytes in the scratch buffer exported by wasm_shell_scratch() and calls
- * wasm_shell_input() for each completed line.
+ * port runs this small shell.  It is host-driven: wasm_shell() blocks in
+ * the wasm_shell_wait import (the runtime reads a line of console input
+ * or, in the browser, unwinds control back to the host), and lines are
+ * fed into wasm_shell_input() which stages them in the exported
+ * shell_scratch buffer.  Echo and line editing are the runtime's job.
  */
 
 #include <linux/kernel.h>
@@ -16,7 +16,6 @@
 #include <linux/mm.h>
 #include <linux/sched.h>
 #include <linux/sched/signal.h>
-#include <linux/version.h>
 #include <os-wasm.h>
 
 #define SHELL_LINE_MAX	128

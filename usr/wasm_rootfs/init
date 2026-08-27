@@ -2,9 +2,10 @@
 # wasmux demo initramfs /init.
 #
 # This rootfs is unpacked by the kernel's initramfs machinery at boot.
-# Executing it is out of scope for the wasm port today: arch/wasm cannot
-# fork or run userspace code yet (see arch/wasm/kernel/process.c), so the
-# kernel reports "No working init found" after unpacking.  This script
-# documents what a future userspace init would do.
+# Executing it is out of scope for the wasm port: arch/wasm cannot fork
+# or run userspace code (see arch/wasm/kernel/process.c), so instead of
+# exec'ing /init the kernel runs its resident shell
+# (arch/wasm/kernel/shell.c).  This script documents what a future
+# userspace init would do.
 echo "wasmux: /init would start userspace here"
 echo "wasmux: see /README for limitations"
