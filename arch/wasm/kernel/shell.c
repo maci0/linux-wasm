@@ -23,6 +23,15 @@
 static char shell_line[SHELL_LINE_MAX];
 static unsigned int shell_line_len;
 
+/* ANSI escape-sequence handling: arrow keys and other cursor keys
+ * arrive as ESC [ ... final-byte (CSI) or ESC ] ... BEL (OSC) sequences
+ * from a raw tty; without this the trailing bytes would be echoed as
+ * garbage ("[A") and pollute the line buffer. */
+static bool shell_esc_pending;	/* saw ESC, waiting for the introducer */
+static bool shell_in_csi;	/* inside ESC [ ... (consume to 0x40-0x7e) */
+static bool shell_in_osc;	/* inside ESC ] ... (consume to BEL) */
+static bool shell_esc_tail;	/* swallow one more byte (ESC O x, ESC M, ...) */
+
 /* runtime staging area for input bytes (host writes, then calls input()) */
 static char shell_scratch[64] __aligned(8);
 
@@ -156,6 +165,38 @@ void wasm_shell_input(const char *data, int len)
 	while (len-- > 0) {
 		char c = *data++;
 
+		if (shell_in_csi) {
+			/* CSI: consume until the final byte */
+			if (c >= 0x40 && c <= 0x7e)
+				shell_in_csi = false;
+			continue;
+		}
+		if (shell_in_osc) {
+			/* OSC: consume until BEL */
+			if (c == 0x07)
+				shell_in_osc = false;
+			continue;
+		}
+		if (shell_esc_tail) {
+			/* two-char escape (ESC O A, ESC M, ...): swallow the tail */
+			shell_esc_tail = false;
+			continue;
+		}
+		if (shell_esc_pending) {
+			shell_esc_pending = false;
+			if (c == '[')
+				shell_in_csi = true;
+			else if (c == ']')
+				shell_in_osc = true;
+			else
+				shell_esc_tail = true;
+			continue;
+		}
+		if (c == '\x1b') {
+			shell_esc_pending = true;
+			continue;
+		}
+
 		if (c == '\n' || c == '\r') {
 			shell_puts("\n");
 			shell_line[shell_line_len] = '\0';
@@ -166,6 +207,18 @@ void wasm_shell_input(const char *data, int len)
 			/* backspace: drop the char and erase it on the console */
 			shell_line_len--;
 			shell_puts("\b \b");
+		} else if (c == '\x03') {
+			/* ^C: cancel the line */
+			shell_puts("^C\n");
+			shell_line_len = 0;
+			shell_prompt();
+		} else if (c == '\x04') {
+			/* ^D: EOF on an empty line ends the session */
+			if (shell_line_len == 0)
+				wasm_exit(0);
+		} else if (c == '\x0c') {
+			/* ^L: clear the screen */
+			shell_puts("\x1b[2J\x1b[H");
 		} else if (c >= ' ' && c < '\x7f' &&
 			   shell_line_len < SHELL_LINE_MAX - 1) {
 			shell_line[shell_line_len++] = c;
