@@ -16,6 +16,8 @@
 #include <linux/mm.h>
 #include <linux/sched.h>
 #include <linux/sched/signal.h>
+#include <linux/fs.h>
+#include <linux/file.h>
 #include <os-wasm.h>
 
 #define SHELL_LINE_MAX	128
@@ -59,6 +61,7 @@ static void cmd_help(void)
 		"  free               memory usage (si_meminfo)\n"
 		"  uptime             seconds since boot\n"
 		"  tasks              list kernel threads\n"
+		"  run <path.wasm>     interpret a wasm32-wasi module\n"
 		"  echo <text>        print text\n"
 		"  clear              clear the terminal\n"
 		"  reboot             exit back to the host\n"
@@ -114,6 +117,52 @@ static void cmd_tasks(void)
 	rcu_read_unlock();
 }
 
+/* run <path.wasm>: load a wasm32-wasi module from the rootfs and
+ * interpret it (see arch/wasm/kernel/wasm-exec.c). */
+static void cmd_run(const char *path)
+{
+	struct file *f;
+	char buf[128];
+	void *image;
+	ssize_t n;
+	int rc;
+
+	if (!path || !*path) {
+		shell_puts("usage: run <path.wasm>\n");
+		return;
+	}
+	f = filp_open(path, O_RDONLY, 0);
+	if (IS_ERR(f)) {
+		snprintf(buf, sizeof(buf), "run: cannot open %s\n", path);
+		shell_puts(buf);
+		return;
+	}
+	image = kvmalloc(f->f_mapping->host->i_size ? f->f_mapping->host->i_size : 1,
+			 GFP_KERNEL);
+	if (!image) {
+		shell_puts("run: out of memory\n");
+		fput(f);
+		return;
+	}
+	n = kernel_read(f, image, f->f_mapping->host->i_size, 0);
+	if (n < 0) {
+		snprintf(buf, sizeof(buf), "run: read failed %zd\n", n);
+		shell_puts(buf);
+		kvfree(image);
+		fput(f);
+		return;
+	}
+	snprintf(buf, sizeof(buf), "run: %s (%zd bytes)\n", path, n);
+	shell_puts(buf);
+	rc = wasm_run(image, n);
+	if (rc < 0) {
+		snprintf(buf, sizeof(buf), "run: error %d\n", rc);
+		shell_puts(buf);
+	}
+	kvfree(image);
+	fput(f);
+}
+
 static void shell_handle_line(char *line)
 {
 	char *arg;
@@ -138,6 +187,8 @@ static void shell_handle_line(char *line)
 		cmd_uptime();
 	else if (!strcmp(line, "tasks"))
 		cmd_tasks();
+	else if (!strcmp(line, "run"))
+		cmd_run(arg);
 	else if (!strcmp(line, "echo")) {
 		shell_puts(arg ? arg : "");
 		shell_puts("\n");

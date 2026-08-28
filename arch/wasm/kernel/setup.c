@@ -45,6 +45,11 @@ void __init wasm_mem_setup(void)
 {
 	memblock_add(0, WASM_MEM_SIZE);
 	memblock_reserve(0, WASM_KERNEL_IMAGE_SIZE);
+	/* Fixed guest memory for the wasm interpreter (arch/wasm/kernel/
+	 * wasm-exec.c): the buddy allocator is not reliable for large
+	 * runtime allocations on this port, so the interpreter uses a
+	 * boot-reserved region instead (56 MiB..60 MiB + 16 KiB state). */
+	memblock_reserve(0x03800000, 0x400000 + 0x4000);
 }
 
 static int show_cpuinfo(struct seq_file *m, void *v)

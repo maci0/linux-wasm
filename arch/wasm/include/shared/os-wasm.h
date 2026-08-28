@@ -56,3 +56,6 @@ void wasm_shell_input(const char *data, int len);
 void wasm_shell(void);
 
 #endif /* __OS_WASM_H */
+
+/* in-kernel wasm interpreter + WASI (arch/wasm/kernel/wasm-exec.c) */
+int wasm_run(const u8 *image, u32 size);

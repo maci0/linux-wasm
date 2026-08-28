@@ -1,7 +1,9 @@
 # wasmux demo initramfs (gen_init_cpio format)
 # Paths are relative to the kernel source root.
 dir /dev 0755 0 0
+dir /etc 0755 0 0
 nod /dev/console 0600 0 0 c 5 1
 file /init usr/wasm_rootfs/init 0755 0 0
 file /etc/version usr/wasm_rootfs/etc/version 0644 0 0
 file /README usr/wasm_rootfs/README 0644 0 0
+file /hello.wasm usr/wasm_rootfs/hello.wasm 0644 0 0
