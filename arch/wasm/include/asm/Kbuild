@@ -58,6 +58,5 @@ generic-y += uaccess.h
 generic-y += unwind_user.h
 generic-y += vermagic.h
 generic-y += word-at-a-time.h
-generic-y += xor.h
 # string.h: provide our own (no memcpy/memset builtins on wasm freestanding)
 

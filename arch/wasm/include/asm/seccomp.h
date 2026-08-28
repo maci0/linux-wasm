@@ -3,7 +3,6 @@
 #define __ASM_WASM_SECCOMP_H
 
 #include <linux/audit.h>
-#include <linux/filter.h>
 
 /* wasm has no native seccomp; the generic seccomp filter will be used.
  * Provide the required syscall numbers and structures. */

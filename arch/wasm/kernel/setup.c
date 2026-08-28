@@ -13,6 +13,7 @@
 #include <linux/seq_file.h>
 #include <linux/random.h>
 #include <linux/string.h>
+#include <generated/utsrelease.h>
 #include <linux/sched.h>
 #include <linux/sched/task.h>
 #include <asm/page.h>
@@ -35,7 +36,7 @@ char __initdata command_line[COMMAND_LINE_SIZE] =
 	"console=wasm0 lpj=1000000 panic=1";
 
 static const char wasm_banner[] __initconst =
-	KERN_INFO "wasmux: Linux 6.19 on freestanding wasm32\n";
+	KERN_INFO "wasmux: Linux " UTS_RELEASE " on freestanding wasm32\n";
 
 void paging_init(void);
 void wasm_console_early_init(void);

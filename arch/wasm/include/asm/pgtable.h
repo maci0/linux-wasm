@@ -22,7 +22,6 @@
 #include <asm/pgtable-2level.h>
 
 extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
-extern unsigned long *empty_zero_page;
 
 /*
  * The wasm linear memory is 128 MiB total (see arch/wasm/Makefile and the
@@ -129,7 +128,6 @@ static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
 	return pte;
 }
 
-#define ZERO_PAGE(vaddr)	((pgtable_t)empty_zero_page ? virt_to_page(empty_zero_page) : NULL)
 #define __HAVE_ARCH_PTE_CLEAR
 static inline int pmd_bad(pmd_t pmd) { return 0; }
 

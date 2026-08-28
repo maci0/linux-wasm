@@ -1,3 +1,4 @@
+#define COMPILE_OFFSETS
 // SPDX-License-Identifier: GPL-2.0
 #include <linux/kbuild.h>
 #include <linux/sched.h>

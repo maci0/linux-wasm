@@ -24,11 +24,9 @@ extern void __init memblock_free_all(void);
 /* init_mm's page-table root; never actually walked on wasm (see pgtable.h) */
 pgd_t swapper_pg_dir[PTRS_PER_PGD] __aligned(PAGE_SIZE);
 
-/* the shared zero page, as every arch must provide */
-unsigned long *empty_zero_page;
-EXPORT_SYMBOL(empty_zero_page);
+/* the shared zero page is provided generically (mm/mm_init.c) */
 
-/* Memory protection map, as arch/um does (6.19 keeps it per-arch). */
+/* Memory protection map, as arch/um does. */
 static const pgprot_t protection_map[16] = {
 	[VM_NONE]					= PAGE_NONE,
 	[VM_READ]					= PAGE_READONLY,
@@ -56,22 +54,17 @@ void __init mem_init(void)
 	memblock_free_all();
 }
 
-void __init paging_init(void)
+void __init arch_zone_limits_init(unsigned long *max_zone_pfns)
 {
-	unsigned long max_zone_pfn[MAX_NR_ZONES] = { 0 };
-
-	empty_zero_page = (unsigned long *)memblock_alloc_low(PAGE_SIZE,
-							     PAGE_SIZE);
-	if (!empty_zero_page)
-		panic("%s: Failed to allocate %lu bytes align=%lx\n",
-		      __func__, PAGE_SIZE, PAGE_SIZE);
-
 	/* the flat wasm heap is one 64 MiB RAM region (see setup.c) */
 	min_low_pfn = 0;
 	max_low_pfn = WASM_MEM_SIZE >> PAGE_SHIFT;
+	max_zone_pfns[ZONE_NORMAL] = max_low_pfn;
+}
 
-	max_zone_pfn[ZONE_NORMAL] = max_low_pfn;
-	free_area_init(max_zone_pfn);
+void __init paging_init(void)
+{
+	/* zone setup happens in mm_core_init() via arch_zone_limits_init() */
 }
 
 void free_initmem(void)
